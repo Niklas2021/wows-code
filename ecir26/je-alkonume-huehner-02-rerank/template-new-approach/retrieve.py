@@ -108,6 +108,9 @@ def run_retrieval(
     ):
         run = pipeline(topics)
 
+    # Fix rank column after reranking (MonoT5 only updates scores, not ranks)
+    run = run.sort_values(["qid", "score"], ascending=[True, False])
+    run["rank"] = run.groupby("qid").cumcount()
     run["run_id"] = tag
     pt.io.write_results(run, target_file)
 

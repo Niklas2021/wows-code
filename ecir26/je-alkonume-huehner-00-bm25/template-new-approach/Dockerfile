@@ -5,3 +5,6 @@ FROM ghcr.io/openwebsearch/wows-code/ecir-2026-pyterrier:latest
 ADD requirements.txt /tmp/requirements.txt
 
 RUN pip3 install -r /tmp/requirements.txt
+
+ADD retrieve.py /retrieve.py
+RUN chmod +x /retrieve.py

@@ -1,2 +1,8 @@
 __pycache__
 wows_eval.egg-info
+.DS_Store
+.venv/
+.vscode/
+output/
+*.log
+hs_err_pid*.log
