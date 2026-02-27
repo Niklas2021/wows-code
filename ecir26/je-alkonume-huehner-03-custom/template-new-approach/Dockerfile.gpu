@@ -1,0 +1,35 @@
+# =============================================================================
+# MonoT5 GPU Reranking Container
+# Build:  docker build -f Dockerfile.gpu -t monot5-gpu .
+# Run:    docker run --gpus all -v ./output:/app/output monot5-gpu \
+#           --dataset radboud-validation-20251114-training --rerank-depth 1000
+# =============================================================================
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+# System deps: Java (required by PyTerrier) + basic tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-11-jdk-headless \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME for PyTerrier
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.gpu.txt /app/requirements.gpu.txt
+RUN pip install --no-cache-dir -r requirements.gpu.txt
+
+# Pre-download PyTerrier JARs + MonoT5 model so they're cached in the image
+RUN python -c "\
+from tira.third_party_integrations import ensure_pyterrier_is_loaded; \
+ensure_pyterrier_is_loaded(patch_ir_datasets=True, is_offline=False)" \
+    && python -c "\
+from transformers import T5ForConditionalGeneration, T5Tokenizer; \
+T5ForConditionalGeneration.from_pretrained('castorini/monot5-base-msmarco'); \
+T5Tokenizer.from_pretrained('castorini/monot5-base-msmarco')"
+
+COPY retrieve_gpu.py /app/retrieve_gpu.py
+
+ENTRYPOINT ["python", "retrieve_gpu.py"]
